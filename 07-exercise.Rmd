@@ -1,0 +1,24 @@
+---
+title: "Exercice 7"
+author: "Gabriel Aubin-Moreau"
+date: "2022-09-29"
+output: html_document
+---
+
+# Tâche 1: Réflection
+
+# Tâche 2: Combiner des graphiques
+Faites 2 à 3 graphiques de tout ce que vous voulez à partir des données results_2016 (histogramme, densité, boxplot,
+nuage de points, peu importe) et combinez-les avec patchwork. Regardez la documentation pour voir des façons originales
+de les combiner, comme avoir deux lignes dans une colonne.
+
+```{r cars}
+summary(cars)
+```
+
+# Tâche 3: Visualisaer des régressions
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
