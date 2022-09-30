@@ -6,19 +6,93 @@ output: html_document
 ---
 
 # Tâche 1: Réflection
+Premièrement, j'ai appris qu'un changement marginal est un autre terme pour parler d'une dérivée. Bien que ce que représente une dérivée est une définition mathématique précise en statistique on considère souvent qu’un changement marginal équivaut au changement qu’apporte l’ajout ou le retrait d’une unité à la valeur d’une fonction. J’ai aussi vu qu’utiliser deux axes y est très mauvais, car le but de l’exercice est de trouvé une relation entre les deux variables, mais comme les données n’ont pas la même échelle, il est impossible de tirer une bonne conclusion d’une comparaison. Et même si les deux variables y auraient une tendance similaire cela ne confirme pas un lien de cause à effet entre les deux variables.
 
 # Tâche 2: Combiner des graphiques
-Faites 2 à 3 graphiques de tout ce que vous voulez à partir des données results_2016 (histogramme, densité, boxplot,
-nuage de points, peu importe) et combinez-les avec patchwork. Regardez la documentation pour voir des façons originales
-de les combiner, comme avoir deux lignes dans une colonne.
+Faites 2 à 3 graphiques de tout ce que vous voulez à partir des données results_2016 (histogramme, densité, boxplot, nuage de points, peu importe) et combinez-les avec patchwork. Regardez la documentation pour voir des façons originales de les combiner, comme avoir deux lignes dans une colonne.
 
-```{r cars}
-summary(cars)
+```{r load-libraries-and-data, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(patchwork)
+library(scales)
+library(ggtext)
+results_2016 <- read.csv("data/results_2016.csv")
+
 ```
 
-# Tâche 3: Visualisaer des régressions
+## Graphique combiné
+```{r combined-graph,  warning=FALSE, message=FALSE}
+p1 <- ggplot(results_2016, mapping = aes(per_capita_income)) +
+  geom_histogram(color = "white") +
+  scale_x_continuous(labels = label_dollar()) +
+  labs(title = "Distribution du PIB par habitant",
+       y = "Nombre",
+       x = "PIB par habitant") +
+  theme_minimal()
+p2 <- ggplot(results_2016, mapping = aes(per_capita_income,
+                                   median_rent)) +
+  geom_point(labels = label_dollar()) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_continuous(labels = label_dollar()) +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(title = "PIB par habitant en fonction<br>du coût médian du logement",
+       x = "PIB par habitant",
+       y = "Coût du logement médian") +
+  theme_minimal() +
+  theme(plot.title = element_markdown())
+p1 + p2
+```
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+# Tâche 3: Visualiser des régressions
+
+## Tracé des coefficients
+
+```{r model, warning=FALSE, message=FALSE}
+library(broom)
+result_model <- lm(data = results_2016, 
+            percent_dem ~ median_age + percent_white + per_capita_income + median_rent + state)
+result_model_coefs <- tidy(result_model, conf.int = TRUE) %>%
+  filter(!str_detect(term, "state") & term != "(Intercept)")
+ggplot(result_model_coefs, mapping = aes(estimate,
+                                         fct_rev(term))) +
+  geom_pointrange(aes(xmin = conf.low,
+                      xmax = conf.high)) +
+  geom_vline(xintercept = 0, color = "red") +
+  labs(title = "Graphique des coefficients", x = "Estimé", y = "Variables") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+## Valeurs prédites
+
+```{r prediction, warning=FALSE, message=FALSE}
+library(modelr)
+new_data <- data_grid(results_2016,
+                      median_rent = seq(100, 1700, by = 100),
+                      state = "California",
+                      median_age = 40,
+                      percent_white = 50,
+                      per_capita_income = 20000
+                      )
+prediction <- augment(result_model,
+                         newdata = new_data, 
+                      se_fit = TRUE)
+ggplot(prediction, aes(median_rent, .fitted)) +
+  geom_ribbon(aes(ymin = .fitted +
+                    (-1.96 * .se.fit),
+                  ymax =  .fitted +
+                    (1.96 * .se.fit)),
+              fill = "blue",
+              alpha = 0.5) +
+  geom_line(size = 1, color = "blue") +
+  scale_x_continuous(labels = label_dollar()) +
+  scale_y_continuous(labels = label_percent(scale = 1)) +
+  labs(title = "Effet marginal du prix médian du loyer sur le % de vote démocrate", y = "Vote démocrate",
+       x = "Prix médian du loyer") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+  
+  
 ```
 
